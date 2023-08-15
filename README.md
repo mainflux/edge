@@ -1,0 +1,2 @@
+# edge
+Mainflux Edge Components
