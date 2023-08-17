@@ -62,7 +62,7 @@ func handleRead(ctx context.Context, pub messaging.Publisher, logger mflog.Logge
 				case <-ctx.Done():
 					return
 				default:
-					res, err := client.Read(writeOpts.Address, writeOpts.Quantity, dataPoint(dp))
+					res, err := client.Read(writeOpts.Address, writeOpts.Quantity, DataPoint(dp))
 					if err != nil {
 						logger.Error(err.Error())
 						continue
@@ -98,7 +98,7 @@ func handleWrite(ctx context.Context, pub messaging.Publisher, logger mflog.Logg
 			return err
 		}
 		defer client.Close()
-		res, err := client.Write(writeOpts.Address, writeOpts.Quantity, writeOpts.Value.Data, dataPoint(dp))
+		res, err := client.Write(writeOpts.Address, writeOpts.Quantity, writeOpts.Value.Data, DataPoint(dp))
 		if err != nil {
 			return err
 		}

@@ -13,15 +13,15 @@ import (
 	"github.com/goburrow/serial"
 )
 
-type dataPoint string
+type DataPoint string
 
 const (
-	Coil            dataPoint = "coil"
-	HoldingRegister dataPoint = "h_register"
-	InputRegister   dataPoint = "i_register"
-	Register        dataPoint = "register"
-	Discrete        dataPoint = "discrete"
-	FIFO            dataPoint = "fifo"
+	Coil            DataPoint = "coil"
+	HoldingRegister DataPoint = "h_register"
+	InputRegister   DataPoint = "i_register"
+	Register        DataPoint = "register"
+	Discrete        DataPoint = "discrete"
+	FIFO            DataPoint = "fifo"
 )
 
 var (
@@ -31,9 +31,9 @@ var (
 
 type ModbusService interface {
 	// Read gets data from modbus.
-	Read(address, quantity uint16, iotype dataPoint) ([]byte, error)
+	Read(address, quantity uint16, iotype DataPoint) ([]byte, error)
 	// Write writes a value/s on Modbus.
-	Write(address, quantity uint16, value interface{}, iotype dataPoint) ([]byte, error)
+	Write(address, quantity uint16, value interface{}, iotype DataPoint) ([]byte, error)
 	// Close closes the modbus connection.
 	Close() error
 }
@@ -169,7 +169,7 @@ func isZeroValue(val interface{}) bool {
 }
 
 // Write writes a value/s on Modbus.
-func (s *modbusService) Write(address, quantity uint16, value interface{}, iotype dataPoint) ([]byte, error) {
+func (s *modbusService) Write(address, quantity uint16, value interface{}, iotype DataPoint) ([]byte, error) {
 	switch iotype {
 	case Coil:
 		switch val := value.(type) {
@@ -197,7 +197,7 @@ func (s *modbusService) Write(address, quantity uint16, value interface{}, iotyp
 }
 
 // Read gets data from modbus.
-func (s *modbusService) Read(address uint16, quantity uint16, iotype dataPoint) ([]byte, error) {
+func (s *modbusService) Read(address uint16, quantity uint16, iotype DataPoint) ([]byte, error) {
 	switch iotype {
 	case Coil:
 		return s.Client.ReadCoils(address, quantity)

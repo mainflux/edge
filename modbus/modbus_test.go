@@ -23,7 +23,7 @@ func TestRead(t *testing.T) {
 		result        string
 		err           error
 		exceptionCode byte
-		dataPointOpt  dataPoint
+		dataPointOpt  DataPoint
 	}{
 		{
 			name: "Test Read Holding Register",
@@ -86,7 +86,7 @@ func TestWrite(t *testing.T) {
 		result        string
 		err           error
 		exceptionCode byte
-		dataPointOpt  dataPoint
+		dataPointOpt  DataPoint
 	}{
 		{
 			name: "Test Write Single Register",
