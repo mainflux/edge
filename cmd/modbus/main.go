@@ -13,7 +13,10 @@ import (
 	"github.com/caarlos0/env/v7"
 	chclient "github.com/mainflux/callhome/pkg/client"
 	jaegerClient "github.com/mainflux/edge/internal/clients/jaeger"
+	"github.com/mainflux/edge/internal/server"
+	"github.com/mainflux/edge/internal/server/http"
 	"github.com/mainflux/edge/modbus"
+	"github.com/mainflux/edge/modbus/api"
 	"github.com/mainflux/mainflux"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
@@ -23,15 +26,16 @@ import (
 )
 
 const (
-	svcName     = "modbus"
-	envPrefixES = "MF_MODBUS_ADAPTER_"
+	svcName        = "modbus"
+	envPrefix      = "MF_MODBUS_ADAPTER_"
+	defSvcHTTPPort = "9990"
 )
 
 type config struct {
 	LogLevel      string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"   envDefault:"info"`
-	JaegerURL     string `env:"MF_JAEGER_URL"               envDefault:"http://localhost:14268/api/traces"`
-	BrokerURL     string `env:"MF_BROKER_URL"               envDefault:"nats://localhost:4222"`
-	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"           envDefault:"true"`
+	JaegerURL     string `env:"MF_JAEGER_URL"                 envDefault:"http://localhost:14268/api/traces"`
+	BrokerURL     string `env:"MF_BROKER_URL"                 envDefault:"nats://localhost:4222"`
+	SendTelemetry bool   `env:"MF_SEND_TELEMETRY"             envDefault:"true"`
 	InstanceID    string `env:"MF_MODBUS_ADAPTER_INSTANCE_ID" envDefault:""`
 }
 
@@ -94,6 +98,23 @@ func main() {
 		chc := chclient.New(svcName, mainflux.Version, logger, cancel)
 		go chc.CallHome(ctx)
 	}
+
+	httpServerConfig := server.Config{Port: defSvcHTTPPort}
+	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
+		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
+		exitCode = 1
+		return
+	}
+
+	hs := http.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(nps, cfg.InstanceID), logger)
+
+	g.Go(func() error {
+		return hs.Start()
+	})
+
+	g.Go(func() error {
+		return server.StopSignalHandler(ctx, cancel, logger, svcName, hs)
+	})
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
