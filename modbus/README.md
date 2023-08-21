@@ -8,13 +8,16 @@ The service is configured using the environment variables presented in the
 following table. Note that any unset variables will be replaced with their
 default values.
 
-| Variable                         | Description                                         | Default                        |
-| -------------------------------- | --------------------------------------------------- | ------------------------------ |
-| MF_MODBUS_ADAPTER_LOG_LEVEL        | Service log level                                   | info                           |
-| MF_BROKER_URL                    | Message broker instance URL                         | nats://localhost:4222          |
-| MF_JAEGER_URL                    | Jaeger server URL                                   | http://jaeger:14268/api/traces |
-| MF_SEND_TELEMETRY                | Send telemetry to mainflux call home server         | true                           |
-| MF_MODBUS_ADAPTER_INSTANCE_ID      | Modbus adapter instance ID                            |                                |
+| Variable                           | Description                              | Default                        |
+| ---------------------------------- | ---------------------------------------- | ------------------------------ |
+| MF_MODBUS_ADAPTER_LOG_LEVEL        | Service log level                        | info                           |
+| MF_BROKER_URL                      | Message broker instance URL              | nats://localhost:4222          |
+| MF_JAEGER_URL                      | Jaeger server URL                        | http://jaeger:14268/api/traces |
+| MF_MODBUS_ADAPTER_INSTANCE_ID      | Modbus adapter instance ID               |                                |
+| MF_MODBUS_ADAPTER_HTTP_HOST        | Modbus service HTTP host                 |                                |
+| MF_MODBUS_ADAPTER_HTTP_PORT        | Modbus service HTTP port                 | 9990                           |
+| MF_MODBUS_ADAPTER_HTTP_SERVER_CERT | Path to server certificate in pem format |                                |
+| MF_MODBUS_ADAPTER_HTTP_SERVER_KEY  | Path to server key in pem format         |                                |
 
 ## Deployment
 
