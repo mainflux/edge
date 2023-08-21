@@ -32,7 +32,7 @@ func readWriteEndpoint(pub messaging.Publisher) endpoint.Endpoint {
 				return nil, err
 			}
 
-			if err = pub.Publish(ctx, fmt.Sprintf("channels.1.modbus.read.rtu.%s", req.Datapoint), &messaging.Message{Payload: payload}); err != nil {
+			if err = pub.Publish(ctx, fmt.Sprintf("modbus.read.rtu.%s", req.Datapoint), &messaging.Message{Payload: payload}); err != nil {
 				return nil, err
 			}
 			return generalResponse{Payload: []byte("successful")}, nil
@@ -52,7 +52,7 @@ func readWriteEndpoint(pub messaging.Publisher) endpoint.Endpoint {
 				return nil, err
 			}
 
-			if err = pub.Publish(ctx, fmt.Sprintf("channels.1.modbus.read.tcp.%s", req.Datapoint), &messaging.Message{Payload: payload}); err != nil {
+			if err = pub.Publish(ctx, fmt.Sprintf("modbus.read.tcp.%s", req.Datapoint), &messaging.Message{Payload: payload}); err != nil {
 				return nil, err
 			}
 			return generalResponse{Payload: []byte("successful")}, nil

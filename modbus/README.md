@@ -21,7 +21,7 @@ default values.
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`modbus-adapter`](https://github.com/mainflux/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in
+Check the [`modbus-adapter`](https://github.com/mainflux/edge/blob/master/docker/modbus/docker-compose.yml#L6) service section in
 docker-compose to see how service is deployed.
 
 Running this service outside of container requires working instance of the message broker service.
@@ -43,7 +43,6 @@ make install
 MF_MODBUS_ADAPTER_LOG_LEVEL=[Service log level] \
 MF_BROKER_URL=[Message broker instance URL] \
 MF_JAEGER_URL=[Jaeger server URL] \
-MF_SEND_TELEMETRY=[Send telemetry to mainflux call home server] \
 MF_MODBUS_ADAPTER_INSTANCE_ID=[CoAP adapter instance ID] \
 $GOBIN/mainflux-modbus
 ```
@@ -54,7 +53,11 @@ The Mainflux Modbus Adapter service interacts with Modbus sensors by subscribing
 
 ### Reading Values
 
-To start reading values, you need to publish a message using mainflux messaging adapters such as http, coap, mqtt etc to the channel `channels/<channel_id>/messages/modbus/read/<modbus_protocol>/<modbus_data_point>`.
+To start reading values, you need to publish a message using nats to the channel `modbus.read.<modbus_protocol>.<modbus_data_point>` as shown in the example below.
+
+```shell
+go run ./examples/publish/main.go -s "nats://localhost:4223" modbus.read.tcp.h_register '{"config": {"address": "localhost:1502"},"options": {"address": 100,"quantity": 1}}'
+```
 
 The supported modbus protocols include:
 
@@ -114,11 +117,19 @@ The config can be eithee RTU or TCP and has the following structures respectivel
 }
 ```
 
-The results of the readings are published on `channels/<channel_id>/messages/modbus/res`
+The results of the readings are published on `modbus.res.<address>`. You can subscribe to the results as shown in the example below:
+
+```shell
+go run ./examples/subscribe/main.go -s "nats://localhost:4223" export.modbus.res.100 hex
+```
 
 ### Writing Values
 
-To start writing values, you need to publish a message using mainflux messaging adapters such as http, coap, mqtt etc to the channel `channels/<channel_id>/messages/modbus/write/<modbus_protocol>/<modbus_data_point>`.
+To start writing values, you need to publish a message using nats to the channel `modbus.write.<modbus_protocol>.<modbus_data_point>` as shown in the example below:
+
+```shell
+go run ./examples/publish/main.go -s "nats://localhost:4222" modbus.write.tcp.register '{"config": {"address": "localhost:1502"},"options": {"address": 102,"quantity": 1, "value": 1}}'
+```
 
 The payload of the message is structured as follows:
 
@@ -135,4 +146,12 @@ The payload of the message is structured as follows:
 
 The value field can be either `uint16` or `[]byte`.
 
-The results of the readings are published on `channels/<channel_id>/messages/modbus/res`
+The results of the readings are published on `modbus.res.<address>`. You can subscribe to the results as shown in the example below:
+
+```shell
+go run ./examples/subscribe/main.go -s "nats://localhost:4223" export.modbus.res.100 hex
+```
+
+### Notes
+Some simulators are available to get you started testing:
+- https://github.com/TechplexEngineer/modbus-sim

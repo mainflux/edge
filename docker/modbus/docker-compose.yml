@@ -1,25 +1,21 @@
 # Copyright (c) Mainflux
 # SPDX-License-Identifier: Apache-2.0
 
-# This docker-compose file contains optional bootstrap services. Since it's optional, this file is
+# This docker-compose file contains modbus service. Since it's optional, this file is
 # dependent of docker-compose file from <project_root>/docker. In order to run this services, execute command:
-# docker-compose -f docker/docker-compose.yml -f docker/addons/bootstrap/docker-compose.yml up
+# docker-compose -f docker/docker-compose.yml -f docker/modbus/docker-compose.yml up
 # from project root.
 
 version: "3.7"
 
 networks:
-  docker_mainflux-base-net:
+  docker_mainflux-edge-base-net:
     external: true
-
-volumes:
-  mainflux-bootstrap-db-volume:
-
 
 services:
   modbus:
-    image: mainflux/http:${MF_RELEASE_TAG}
-    container_name: mainflux-http
+    image: mainflux/modbus:${MF_RELEASE_TAG}
+    container_name: mainflux-modbus
     depends_on:
       - broker
     restart: on-failure
@@ -35,4 +31,4 @@ services:
     ports:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
-      - docker_mainflux-base-net
+      - docker_mainflux-edge-base-net

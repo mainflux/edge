@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 
 const (
 	// channels.<channel_id>.modbus.<read/write>.<modbus_protocol>.<modbus_data_point> .
-	readTopic  = "channels.*.modbus.read.*.*"
-	writeTopic = "channels.*.modbus.write.*.*"
+	readTopic  = "channels.modbus.read.*.*"
+	writeTopic = "channels.modbus.write.*.*"
 )
 
 var errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
@@ -45,8 +46,8 @@ func (f service) Read(ctx context.Context, id string, sub messaging.Subscriber, 
 
 func handleRead(ctx context.Context, pub messaging.Publisher, logger mflog.Logger) handleFunc {
 	return func(msg *messaging.Message) error {
-		protocal := strings.Split(msg.Subtopic, ".")[2]
-		dp := strings.Split(msg.Subtopic, ".")[3]
+		protocal := strings.Split(msg.Channel, ".")[2]
+		dp := strings.Split(msg.Channel, ".")[3]
 		writeOpts, cfg, err := getInput(msg.Payload)
 		if err != nil {
 			return err
@@ -67,9 +68,8 @@ func handleRead(ctx context.Context, pub messaging.Publisher, logger mflog.Logge
 						logger.Error(err.Error())
 						continue
 					}
-					if err := pub.Publish(ctx, msg.Channel, &messaging.Message{
-						Payload:  res,
-						Subtopic: "modbus.res",
+					if err := pub.Publish(ctx, fmt.Sprintf("export.modbus.res.%d", writeOpts.Address), &messaging.Message{
+						Payload: res,
 					}); err != nil {
 						logger.Error(err.Error())
 					}
@@ -87,8 +87,8 @@ func (f service) Write(ctx context.Context, id string, sub messaging.Subscriber,
 
 func handleWrite(ctx context.Context, pub messaging.Publisher, logger mflog.Logger) handleFunc {
 	return func(msg *messaging.Message) error {
-		protocal := strings.Split(msg.Subtopic, ".")[2]
-		dp := strings.Split(msg.Subtopic, ".")[3]
+		protocal := strings.Split(msg.Channel, ".")[2]
+		dp := strings.Split(msg.Channel, ".")[3]
 		writeOpts, cfg, err := getInput(msg.Payload)
 		if err != nil {
 			return err
@@ -102,9 +102,8 @@ func handleWrite(ctx context.Context, pub messaging.Publisher, logger mflog.Logg
 		if err != nil {
 			return err
 		}
-		if err := pub.Publish(ctx, msg.Channel, &messaging.Message{
-			Payload:  res,
-			Subtopic: "modbus.res",
+		if err := pub.Publish(ctx, fmt.Sprintf("export.modbus.res.%d", writeOpts.Address), &messaging.Message{
+			Payload: res,
 		}); err != nil {
 			return err
 		}
