@@ -117,10 +117,16 @@ The config can be eithee RTU or TCP and has the following structures respectivel
 }
 ```
 
-The results of the readings are published on `modbus.res.<address>`. You can subscribe to the results as shown in the example below:
+The results of the readings are published on `export.modbus.res.<address>`. You can subscribe to the results as shown in the example below:
 
 ```shell
 go run ./examples/subscribe/main.go -s "nats://localhost:4223" export.modbus.res.100 hex
+```
+
+To stop reading values publish to topic `modbus.read.stop.<options_address>`, where options address is an integer reprensenting the value set in the  reading options. 
+
+```shell
+go run ./examples/publish/main.go -s "nats://localhost:4223" modbus.read.stop.100 ''
 ```
 
 ### Writing Values

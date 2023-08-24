@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	mflog "github.com/mainflux/mainflux/logger"
@@ -16,9 +18,14 @@ const (
 	// channels.<channel_id>.modbus.<read/write>.<modbus_protocol>.<modbus_data_point> .
 	readTopic  = "channels.modbus.read.*.*"
 	writeTopic = "channels.modbus.write.*.*"
+	rtu        = "rtu"
+	tcp        = "tcp"
 )
 
-var errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
+var (
+	errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
+	errRegisterNotFound          = errors.New("register not found in readers")
+)
 
 type Service interface {
 	// Read subscribes to the Subscriber and
@@ -30,58 +37,81 @@ type Service interface {
 }
 
 type service struct {
-	logger mflog.Logger
+	sync.Mutex
+	logger  mflog.Logger
+	readers map[uint16]context.CancelFunc
 }
 
 // NewForwarder returns new Forwarder implementation.
 func New(logger mflog.Logger) Service {
-	return service{
-		logger: logger,
+	return &service{
+		logger:  logger,
+		readers: make(map[uint16]context.CancelFunc),
 	}
 }
 
-func (f service) Read(ctx context.Context, id string, sub messaging.Subscriber, pub messaging.Publisher) error {
-	return sub.Subscribe(ctx, id, readTopic, handleRead(ctx, pub, f.logger))
+func (s *service) Read(ctx context.Context, id string, sub messaging.Subscriber, pub messaging.Publisher) error {
+	return sub.Subscribe(ctx, id, readTopic, s.handleRead(ctx, pub))
 }
 
-func handleRead(ctx context.Context, pub messaging.Publisher, logger mflog.Logger) handleFunc {
+func (s *service) handleRead(ctx context.Context, pub messaging.Publisher) handleFunc {
 	return func(msg *messaging.Message) error {
-		protocal := strings.Split(msg.Channel, ".")[2]
+		protocol := strings.Split(msg.Channel, ".")[2]
 		dp := strings.Split(msg.Channel, ".")[3]
+		if protocol == "stop" {
+			reg, err := strconv.ParseUint(dp, 10, 16)
+			if err != nil {
+				return err
+			}
+			s.Lock()
+			defer s.Unlock()
+			if cancel, ok := s.readers[uint16(reg)]; ok {
+				cancel()
+				delete(s.readers, uint16(reg))
+				return nil
+			}
+			return errRegisterNotFound
+		}
+
 		writeOpts, cfg, err := getInput(msg.Payload)
 		if err != nil {
 			return err
 		}
-		client, freq, err := clientFromProtocol(protocal, cfg)
+		client, freq, err := clientFromProtocol(protocol, cfg)
 		if err != nil {
 			return err
 		}
-		go func() {
+		ctx, cancel := context.WithCancel(ctx)
+		s.Lock()
+		defer s.Unlock()
+		s.readers[writeOpts.Address] = cancel
+		go func(ctx context.Context) {
 			defer client.Close()
 			for {
 				select {
 				case <-ctx.Done():
+					s.logger.Info("reader cancelled")
 					return
 				default:
 					res, err := client.Read(writeOpts.Address, writeOpts.Quantity, DataPoint(dp))
 					if err != nil {
-						logger.Error(err.Error())
+						s.logger.Error(err.Error())
 						continue
 					}
 					if err := pub.Publish(ctx, fmt.Sprintf("export.modbus.res.%d", writeOpts.Address), &messaging.Message{
 						Payload: res,
 					}); err != nil {
-						logger.Error(err.Error())
+						s.logger.Error(err.Error())
 					}
 				}
 				time.Sleep(freq)
 			}
-		}()
+		}(ctx)
 		return nil
 	}
 }
 
-func (f service) Write(ctx context.Context, id string, sub messaging.Subscriber, pub messaging.Publisher) error {
+func (f *service) Write(ctx context.Context, id string, sub messaging.Subscriber, pub messaging.Publisher) error {
 	return sub.Subscribe(ctx, id, writeTopic, handleWrite(ctx, pub, f.logger))
 }
 
@@ -125,14 +155,14 @@ func (h handleFunc) Cancel() error {
 
 func clientFromProtocol(protocol string, config []byte) (ModbusService, time.Duration, error) {
 	switch protocol {
-	case "tcp":
+	case tcp:
 		var cfg TCPHandlerOptions
 		if err := json.Unmarshal(config, &cfg); err != nil {
 			return nil, time.Second, err
 		}
 		svc, err := NewTCPClient(cfg)
 		return svc, cfg.SamplingFrequency.Duration, err
-	case "rtu":
+	case rtu:
 		var cfg RTUHandlerOptions
 		if err := json.Unmarshal(config, &cfg); err != nil {
 			return nil, time.Second, err
