@@ -12,28 +12,21 @@ import (
 
 	"github.com/caarlos0/env/v7"
 	jaegerClient "github.com/mainflux/edge/internal/clients/jaeger"
-	"github.com/mainflux/edge/internal/server"
-	"github.com/mainflux/edge/internal/server/http"
 	"github.com/mainflux/edge/modbus"
 	"github.com/mainflux/edge/modbus/api"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/messaging/brokers"
 	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	svcName        = "modbus"
-	envPrefix      = "MF_MODBUS_ADAPTER_"
-	defSvcHTTPPort = "9990"
-)
+const svcName = "modbus"
 
 type config struct {
-	LogLevel   string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"   envDefault:"info"`
-	JaegerURL  string `env:"MF_JAEGER_URL"                 envDefault:"http://localhost:14268/api/traces"`
-	BrokerURL  string `env:"MF_BROKER_URL"                 envDefault:"nats://localhost:4222"`
-	InstanceID string `env:"MF_MODBUS_ADAPTER_INSTANCE_ID" envDefault:""`
+	LogLevel   string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"    envDefault:"info"`
+	JaegerURL  string `env:"MF_JAEGER_URL"                  envDefault:"http://localhost:14268/api/traces"`
+	ServerURL  string `env:"MF_MODBUS_ADAPTER_URL"           envDefault:"http://localhost:8855"`
+	InstanceID string `env:"MF_MODBUS_ADAPTER_INSTANCE_ID"  envDefault:""`
 }
 
 func main() {
@@ -69,44 +62,9 @@ func main() {
 		}
 	}()
 
-	nps, err := brokers.NewPubSub(cfg.BrokerURL, "", logger)
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to connect to message broker: %s", err))
-		exitCode = 1
-		return
-	}
-	defer nps.Close()
+	svc := modbus.New()
 
-	svc := modbus.New(logger)
-
-	if err := svc.Read(ctx, svcName, nps, nps); err != nil {
-		logger.Error(fmt.Sprintf("failed to forward read messages: %v", err))
-		exitCode = 1
-		return
-	}
-
-	if err := svc.Write(ctx, svcName, nps, nps); err != nil {
-		logger.Error(fmt.Sprintf("failed to forward write messages: %v", err))
-		exitCode = 1
-		return
-	}
-
-	httpServerConfig := server.Config{Port: defSvcHTTPPort}
-	if err := env.Parse(&httpServerConfig, env.Options{Prefix: envPrefix}); err != nil {
-		logger.Error(fmt.Sprintf("failed to load %s HTTP server configuration : %s", svcName, err))
-		exitCode = 1
-		return
-	}
-
-	hs := http.New(ctx, cancel, svcName, httpServerConfig, api.MakeHandler(nps, cfg.InstanceID), logger)
-
-	g.Go(func() error {
-		return hs.Start()
-	})
-
-	g.Go(func() error {
-		return server.StopSignalHandler(ctx, cancel, logger, svcName, hs)
-	})
+	api.NewServer(svc, cfg.ServerURL)
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {

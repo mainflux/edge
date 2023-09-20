@@ -228,9 +228,11 @@ func (s *modbusService) Close() error {
 }
 
 type RWOptions struct {
-	Address  uint16       `json:"address"`
-	Quantity uint16       `json:"quantity"`
-	Value    ValueWrapper `json:"value,omitempty"`
+	ID        int          `json:"id"`
+	DataPoint DataPoint    `json:"data_type"`
+	Address   uint16       `json:"address"`
+	Quantity  uint16       `json:"quantity"`
+	Value     ValueWrapper `json:"value,omitempty"`
 }
 
 type ValueWrapper struct {
