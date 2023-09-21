@@ -6,15 +6,3 @@ version: "3.7"
 networks:
   mainflux-edge-base-net:
     driver: bridge
-
-services:
-  edge-broker:
-    extends:
-      file: brokers/nats.yml
-      service: broker
-    container_name: edge-broker
-    restart: on-failure
-    networks:
-      - mainflux-edge-base-net
-    ports:
-      - 4222:4222

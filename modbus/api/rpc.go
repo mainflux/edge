@@ -17,7 +17,7 @@ type server struct {
 	inbound *net.TCPListener
 }
 
-func NewServer(svc modbus.Service, address string) (Server, error) {
+func NewServer(svc *modbus.Adapter, address string) (Server, error) {
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		return nil, err
@@ -34,9 +34,7 @@ func NewServer(svc modbus.Service, address string) (Server, error) {
 }
 
 func (s server) Start(ctx context.Context) error {
-	if _, err := s.inbound.Accept(); err != nil {
-		return err
-	}
+	rpc.Accept(s.inbound)
 	return nil
 }
 

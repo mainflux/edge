@@ -72,12 +72,7 @@ install:
 	cp ${BUILD_DIR}/* $(GOBIN)
 
 test:
-	go test -mod=vendor -v -race -count 1 -tags test $(shell go list ./... | grep -v 'vendor\|cmd')
-
-proto:
-	protoc -I. --go_out=. --go_opt=paths=source_relative pkg/messaging/*.proto
-	protoc -I. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative users/policies/*.proto
-	protoc -I. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative things/policies/*.proto
+	go test -v -race -count 1 -tags test $(shell go list ./... | grep -v 'vendor\|cmd')
 
 $(SERVICES):
 	$(call compile_service,$(@))

@@ -11,13 +11,10 @@ default values.
 | Variable                           | Description                              | Default                        |
 | ---------------------------------- | ---------------------------------------- | ------------------------------ |
 | MF_MODBUS_ADAPTER_LOG_LEVEL        | Service log level                        | info                           |
-| MF_BROKER_URL                      | Message broker instance URL              | nats://localhost:4222          |
 | MF_JAEGER_URL                      | Jaeger server URL                        | http://jaeger:14268/api/traces |
 | MF_MODBUS_ADAPTER_INSTANCE_ID      | Modbus adapter instance ID               |                                |
-| MF_MODBUS_ADAPTER_HTTP_HOST        | Modbus service HTTP host                 |                                |
-| MF_MODBUS_ADAPTER_HTTP_PORT        | Modbus service HTTP port                 | 9990                           |
-| MF_MODBUS_ADAPTER_HTTP_SERVER_CERT | Path to server certificate in pem format |                                |
-| MF_MODBUS_ADAPTER_HTTP_SERVER_KEY  | Path to server key in pem format         |                                |
+| MF_MODBUS_ADAPTER_RPC_HOST        | Modbus service HTTP host                 |                                |
+| MF_MODBUS_ADAPTER_RPC_PORT        | Modbus service HTTP port                 | 8855                           |
 
 ## Deployment
 
@@ -33,7 +30,7 @@ git clone https://github.com/mainflux/mainflux
 
 cd mainflux
 
-# compile the http
+# compile the binary
 make modbus
 
 # copy binary to bin
@@ -41,7 +38,8 @@ make install
 
 # set the environment variables and run the service
 MF_MODBUS_ADAPTER_LOG_LEVEL=[Service log level] \
-MF_BROKER_URL=[Message broker instance URL] \
+MF_MODBUS_ADAPTER_RPC_HOST=[Message broker instance URL] \
+MF_MODBUS_ADAPTER_RPC_PORT=[Message broker instance URL] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_MODBUS_ADAPTER_INSTANCE_ID=[CoAP adapter instance ID] \
 $GOBIN/mainflux-modbus
@@ -49,47 +47,10 @@ $GOBIN/mainflux-modbus
 
 ## Usage
 
-The Mainflux Modbus Adapter service interacts with Modbus sensors by subscribing to specific channels for reading and writing Modbus values. It utilizes the Mainflux messaging system and follows a specific payload structure for configuration.
+The Mainflux Modbus Adapter service interacts with Modbus sensors through an RPC interface to perform read and write operations.
 
-### Reading Values
-
-To start reading values, you need to publish a message using nats to the channel `modbus.read.<modbus_protocol>.<modbus_data_point>` as shown in the example below.
-
-```shell
-go run ./examples/publish/main.go -s "nats://localhost:4223" modbus.read.tcp.h_register '{"config": {"address": "localhost:1502"},"options": {"address": 100,"quantity": 1}}'
-```
-
-The supported modbus protocols include:
-
-- TCP
-- RTU
-
-The supported data points include:
-
-- coil
-- h_register
-- i_register
-- register
-- discrete
-- fifo
-
-The payload of the message is structured as follows:
-
-```json
-{
-    "options": {
-        "address": 123,
-        "quantity": 2,
-    },
-    "config": {
-		"sampling_frquency: ""
-		...
-	}
-}
-
-```
-
-The config can be eithee RTU or TCP and has the following structures respectively:
+## Configuration
+Before using the service an RPC call needs to be made to the Configure method passing either RTU or TCP configuration as shown in the example.
 
 ```json
 {
@@ -117,47 +78,86 @@ The config can be eithee RTU or TCP and has the following structures respectivel
 }
 ```
 
-The results of the readings are published on `export.modbus.res.<address>`. You can subscribe to the results as shown in the example below:
+```go
+client, err := rpc.Dial("tcp", "localhost:8855")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
 
-```shell
-go run ./examples/subscribe/main.go -s "nats://localhost:4223" export.modbus.res.100 hex
+	var id int
+	// configure
+	config := modbus.TCPHandlerOptions{
+		Address: "localhost:1502",
+	}
+
+	err = client.Call("Adapter.ConfigureTCP", config, &id)
+	if err != nil {
+		fmt.Println("Configure Error:", err)
+	} else {
+		fmt.Println("Configure Response:", id)
+	}
 ```
 
-To stop reading values publish to topic `modbus.read.stop.<options_address>`, where options address is an integer reprensenting the value set in the  reading options. 
+### Reading Values
 
-```shell
-go run ./examples/publish/main.go -s "nats://localhost:4223" modbus.read.stop.100 ''
+To start reading values, you need to perform an RPC call to the read method.
+
+```go
+configRead := modbus.RWOptions{
+		Address:   100,
+		Quantity:  1,
+		DataPoint: modbus.HoldingRegister,
+		ID:        id,
+	}
+
+	data := make([]byte, 1)
+
+	// Read
+	err = client.Call("Adapter.Read", configRead, &data)
+	if err != nil {
+		fmt.Println("Read Error:", err)
+	} else {
+		fmt.Println("Read Data:", hex.EncodeToString(data))
+	}
 ```
+
+
+The supported data points include:
+
+- coil
+- h_register
+- i_register
+- register
+- discrete
+- fifo
+
 
 ### Writing Values
 
-To start writing values, you need to publish a message using nats to the channel `modbus.write.<modbus_protocol>.<modbus_data_point>` as shown in the example below:
+To start writing values, you need to perform an RPC call to the write method.
 
-```shell
-go run ./examples/publish/main.go -s "nats://localhost:4222" modbus.write.tcp.register '{"config": {"address": "localhost:1502"},"options": {"address": 102,"quantity": 1, "value": 1}}'
-```
+```go
+configWrite := modbus.RWOptions{
+		Address:   100,
+		Quantity:  1,
+		Value:     modbus.ValueWrapper{Data: uint16(1)},
+		DataPoint: modbus.Register,
+		ID:        id,
+	}
 
-The payload of the message is structured as follows:
-
-```json
-{
-    "options": {
-        "address": 123,
-        "quantity": 2,
-        "value": {}
-    },
-    "config": {}
-}
+	// Write
+	err = client.Call("Adapter.Write", configWrite, &data)
+	if err != nil {
+		fmt.Println("Write Error:", err)
+	} else {
+		fmt.Println("Write Response:", hex.EncodeToString(data))
+	}
 ```
 
 The value field can be either `uint16` or `[]byte`.
 
-The results of the readings are published on `modbus.res.<address>`. You can subscribe to the results as shown in the example below:
-
-```shell
-go run ./examples/subscribe/main.go -s "nats://localhost:4223" export.modbus.res.100 hex
-```
-
 ### Notes
+More examples in the `example` dir.
 Some simulators are available to get you started testing:
 - https://github.com/TechplexEngineer/modbus-sim

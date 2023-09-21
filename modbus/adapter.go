@@ -5,7 +5,10 @@ import (
 	"sync"
 )
 
-var errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
+var (
+	errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
+	errDeviceNotConfigured       = errors.New("modbus device is not configured")
+)
 
 type Service interface {
 	// Read subscribes to the Subscriber and
@@ -15,56 +18,80 @@ type Service interface {
 	// writes to modbus sensor.
 	Write(config RWOptions, res *[]byte) error
 	// Configure sets the configuration for a device and returns the index for the connection.
-	Configure(config interface{}, id *int) error
+	ConfigureTCP(config TCPHandlerOptions, id *int) error
+	ConfigureRTU(config RTUHandlerOptions, id *int) error
+	// Close closes the modbus connection.
+	Close(id int, res *bool) error
 }
 
-type service struct {
-	sync.Mutex
+type Adapter struct {
+	mutex   sync.Mutex
 	servers map[int]ModbusService
 }
 
-func New() Service {
-	return &service{
+func New() *Adapter {
+	return &Adapter{
 		servers: make(map[int]ModbusService),
 	}
 }
 
-func (s *service) Read(config RWOptions, res *[]byte) error {
-	dat, err := s.servers[config.ID].Read(config.Address, config.Quantity, config.DataPoint)
-	res = &dat
-	return err
-}
-
-func (s *service) Write(config RWOptions, res *[]byte) error {
-	dat, err := s.servers[config.ID].Write(config.Address, config.Quantity, config.Value.Data, config.DataPoint)
-	res = &dat
-	return err
-}
-
-func (s *service) Configure(config interface{}, id *int) error {
-	switch conf := config.(type) {
-	case TCPHandlerOptions:
-		svc, err := NewTCPClient(conf)
-		if err != nil {
-			return err
-		}
-		s.Lock()
-		newID := len(s.servers) + 1
-		s.servers[newID] = svc
-		s.Unlock()
-		id = &newID
-	case RTUHandlerOptions:
-		svc, err := NewRTUClient(conf)
-		if err != nil {
-			return err
-		}
-		s.Lock()
-		newID := len(s.servers) + 1
-		s.servers[newID] = svc
-		s.Unlock()
-		id = &newID
-	default:
-		return errUnsupportedModbusProtocol
+func (s *Adapter) Read(config RWOptions, res *[]byte) error {
+	server, ok := s.servers[config.ID]
+	if !ok {
+		return errDeviceNotConfigured
 	}
+	dat, err := server.Read(config.Address, config.Quantity, config.DataPoint)
+	*res = dat
+	return err
+}
+
+func (s *Adapter) Write(config RWOptions, res *[]byte) error {
+	server, ok := s.servers[config.ID]
+	if !ok {
+		return errDeviceNotConfigured
+	}
+	dat, err := server.Write(config.Address, config.Quantity, config.Value.Data, config.DataPoint)
+	*res = dat
+	return err
+}
+
+func (s *Adapter) ConfigureTCP(config TCPHandlerOptions, id *int) error {
+	svc, err := NewTCPClient(config)
+	if err != nil {
+		return err
+	}
+	s.mutex.Lock()
+	newID := len(s.servers) + 1
+	s.servers[newID] = svc
+	s.mutex.Unlock()
+	*id = newID
+	return nil
+}
+
+func (s *Adapter) ConfigureRTU(config RTUHandlerOptions, id *int) error {
+	svc, err := NewRTUClient(config)
+	if err != nil {
+		return err
+	}
+	s.mutex.Lock()
+	newID := len(s.servers) + 1
+	s.servers[newID] = svc
+	s.mutex.Unlock()
+	*id = newID
+	return nil
+}
+
+func (s *Adapter) Close(id int, res *bool) error {
+	server, ok := s.servers[id]
+	if !ok {
+		return errDeviceNotConfigured
+	}
+	if err := server.Close(); err != nil {
+		return err
+	}
+	s.mutex.Lock()
+	delete(s.servers, id)
+	s.mutex.Unlock()
+	*res = true
 	return nil
 }

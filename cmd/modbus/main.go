@@ -25,7 +25,8 @@ const svcName = "modbus"
 type config struct {
 	LogLevel   string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"    envDefault:"info"`
 	JaegerURL  string `env:"MF_JAEGER_URL"                  envDefault:"http://localhost:14268/api/traces"`
-	ServerURL  string `env:"MF_MODBUS_ADAPTER_URL"           envDefault:"http://localhost:8855"`
+	RPCPort    int    `env:"MF_MODBUS_ADAPTER_RPC_PORT"     envDefault:"8855"`
+	RPCHost    string `env:"MF_MODBUS_ADAPTER_RPC_HOST"     envDefault:"localhost"`
 	InstanceID string `env:"MF_MODBUS_ADAPTER_INSTANCE_ID"  envDefault:""`
 }
 
@@ -64,7 +65,22 @@ func main() {
 
 	svc := modbus.New()
 
-	api.NewServer(svc, cfg.ServerURL)
+	server, err := api.NewServer(svc, fmt.Sprintf("%s:%d", cfg.RPCHost, cfg.RPCPort))
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	g.Go(func() error {
+		return server.Start(ctx)
+	})
+
+	fmt.Printf("modbus service listening on rpc %s:%d", cfg.RPCHost, cfg.RPCPort)
+	defer func() {
+		if err := server.Stop(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {

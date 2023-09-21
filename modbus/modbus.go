@@ -3,7 +3,6 @@ package modbus
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 
@@ -50,7 +49,6 @@ type modbusService struct {
 type TCPHandlerOptions struct {
 	Address           string         `json:"address"`
 	IdleTimeout       customDuration `json:"idle_time"`
-	Logger            *log.Logger    `json:"-"`
 	SlaveId           byte           `json:"slave_id,omitempty"`
 	Timeout           customDuration `json:"timeout,omitempty"`
 	SamplingFrequency customDuration `json:"sampling_frequency,omitempty"`
@@ -65,9 +63,6 @@ func NewTCPClient(config TCPHandlerOptions) (ModbusService, error) {
 	}
 	if !isZeroValue(config.IdleTimeout) {
 		handler.IdleTimeout = config.IdleTimeout.Duration
-	}
-	if !isZeroValue(config.Logger) {
-		handler.Logger = config.Logger
 	}
 	if !isZeroValue(config.SlaveId) {
 		handler.SlaveId = config.SlaveId
@@ -93,7 +88,6 @@ type RTUHandlerOptions struct {
 	Config            serial.Config      `json:"config,omitempty"`
 	DataBits          int                `json:"data_bits,omitempty"`
 	IdleTimeout       customDuration     `json:"idle_timeout,omitempty"`
-	Logger            *log.Logger        `json:"-"`
 	Parity            string             `json:"parity,omitempty"`
 	RS485             serial.RS485Config `json:"rs485,omitempty"`
 	SlaveId           byte               `json:"slave_id,omitempty"`
@@ -120,9 +114,6 @@ func NewRTUClient(config RTUHandlerOptions) (ModbusService, error) {
 	}
 	if !isZeroValue(config.IdleTimeout) {
 		handler.IdleTimeout = config.IdleTimeout.Duration
-	}
-	if !isZeroValue(config.Logger) {
-		handler.Logger = config.Logger
 	}
 	if !isZeroValue(config.Parity) {
 		handler.Parity = config.Parity
