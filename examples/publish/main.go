@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -42,7 +43,7 @@ func main() {
 	}
 	defer ps.Close()
 
-	if err := ps.Publish(subj, &messaging.Message{
+	if err := ps.Publish(context.Background(), subj, &messaging.Message{
 		Channel: subj,
 		Payload: msg,
 	}); err != nil {
