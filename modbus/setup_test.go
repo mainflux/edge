@@ -14,9 +14,7 @@ import (
 	dockertest "github.com/ory/dockertest/v3"
 )
 
-var (
-	Address string
-)
+var address string
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -30,9 +28,8 @@ func TestMain(m *testing.M) {
 	}
 	handleInterrupt(pool, container)
 
-	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("1502/tcp"))
+	address = fmt.Sprintf("%s:%s", "localhost", container.GetPort("1502/tcp"))
 	if err := pool.Retry(func() error {
-		Address = address
 		return nil
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)

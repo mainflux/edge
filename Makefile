@@ -107,9 +107,6 @@ release:
 	done
 	$(call docker_push,$(version))
 
-rundev:
-	cd scripts && ./run.sh
-
 run:
 	sed -i "s,file: brokers/.*.yml,file: brokers/${MF_BROKER_TYPE}.yml," docker/docker-compose.yml
 	sed -i "s,MF_BROKER_URL=.*,MF_BROKER_URL=$$\{MF_$(shell echo ${MF_BROKER_TYPE} | tr 'a-z' 'A-Z')_URL\}," docker/.env

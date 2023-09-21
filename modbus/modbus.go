@@ -37,10 +37,10 @@ type ModbusService interface {
 	Close() error
 }
 
-var _ ModbusService = (*modbusService)(nil)
+var _ ModbusService = (*service)(nil)
 
 // adapterService provides methods for reading and writing data on Modbus.
-type modbusService struct {
+type service struct {
 	Client  modbus.Client
 	handler modbus.ClientHandler
 }
@@ -58,9 +58,6 @@ type TCPHandlerOptions struct {
 // and handler options provided.
 func NewTCPClient(config TCPHandlerOptions) (ModbusService, error) {
 	handler := modbus.NewTCPClientHandler(config.Address)
-	if err := handler.Connect(); err != nil {
-		return nil, err
-	}
 	if !isZeroValue(config.IdleTimeout) {
 		handler.IdleTimeout = config.IdleTimeout.Duration
 	}
@@ -75,7 +72,7 @@ func NewTCPClient(config TCPHandlerOptions) (ModbusService, error) {
 		return nil, err
 	}
 
-	return &modbusService{
+	return &service{
 		Client:  modbus.NewClient(handler),
 		handler: handler,
 	}, nil
@@ -100,9 +97,6 @@ type RTUHandlerOptions struct {
 // and handler options provided.
 func NewRTUClient(config RTUHandlerOptions) (ModbusService, error) {
 	handler := modbus.NewRTUClientHandler(config.Address)
-	if err := handler.Connect(); err != nil {
-		return nil, err
-	}
 	if !isZeroValue(config.BaudRate) {
 		handler.BaudRate = config.BaudRate
 	}
@@ -134,7 +128,7 @@ func NewRTUClient(config RTUHandlerOptions) (ModbusService, error) {
 	if err := handler.Connect(); err != nil {
 		return nil, err
 	}
-	return &modbusService{
+	return &service{
 		Client: modbus.NewClient(handler),
 	}, nil
 }
@@ -160,7 +154,7 @@ func isZeroValue(val interface{}) bool {
 }
 
 // Write writes a value/s on Modbus.
-func (s *modbusService) Write(address, quantity uint16, value interface{}, iotype DataPoint) ([]byte, error) {
+func (s *service) Write(address, quantity uint16, value interface{}, iotype DataPoint) ([]byte, error) {
 	switch iotype {
 	case Coil:
 		switch val := value.(type) {
@@ -188,7 +182,7 @@ func (s *modbusService) Write(address, quantity uint16, value interface{}, iotyp
 }
 
 // Read gets data from modbus.
-func (s *modbusService) Read(address uint16, quantity uint16, iotype DataPoint) ([]byte, error) {
+func (s *service) Read(address uint16, quantity uint16, iotype DataPoint) ([]byte, error) {
 	switch iotype {
 	case Coil:
 		return s.Client.ReadCoils(address, quantity)
@@ -207,7 +201,7 @@ func (s *modbusService) Read(address uint16, quantity uint16, iotype DataPoint) 
 	}
 }
 
-func (s *modbusService) Close() error {
+func (s *service) Close() error {
 	switch h := s.handler.(type) {
 	case *modbus.RTUClientHandler:
 		return h.Close()

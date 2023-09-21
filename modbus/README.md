@@ -8,13 +8,13 @@ The service is configured using the environment variables presented in the
 following table. Note that any unset variables will be replaced with their
 default values.
 
-| Variable                           | Description                              | Default                        |
-| ---------------------------------- | ---------------------------------------- | ------------------------------ |
-| MF_MODBUS_ADAPTER_LOG_LEVEL        | Service log level                        | info                           |
-| MF_JAEGER_URL                      | Jaeger server URL                        | http://jaeger:14268/api/traces |
-| MF_MODBUS_ADAPTER_INSTANCE_ID      | Modbus adapter instance ID               |                                |
-| MF_MODBUS_ADAPTER_RPC_HOST        | Modbus service HTTP host                 |                                |
-| MF_MODBUS_ADAPTER_RPC_PORT        | Modbus service HTTP port                 | 8855                           |
+| Variable                      | Description                | Default                        |
+| ----------------------------- | -------------------------- | ------------------------------ |
+| MF_MODBUS_ADAPTER_LOG_LEVEL   | Service log level          | info                           |
+| MF_JAEGER_URL                 | Jaeger server URL          | http://jaeger:14268/api/traces |
+| MF_MODBUS_ADAPTER_INSTANCE_ID | Modbus adapter instance ID |                                |
+| MF_MODBUS_ADAPTER_RPC_HOST    | Modbus service HTTP host   |                                |
+| MF_MODBUS_ADAPTER_RPC_PORT    | Modbus service HTTP port   | 8855                           |
 
 ## Deployment
 
@@ -26,9 +26,9 @@ To start the service outside of the container, execute the following shell scrip
 
 ```bash
 # download the latest version of the service
-git clone https://github.com/mainflux/mainflux
+git clone https://github.com/mainflux/edge
 
-cd mainflux
+cd edge
 
 # compile the binary
 make modbus
@@ -80,23 +80,23 @@ Before using the service an RPC call needs to be made to the Configure method pa
 
 ```go
 client, err := rpc.Dial("tcp", "localhost:8855")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Close()
+if err != nil {
+	log.Fatal(err)
+}
+defer client.Close()
 
-	var id int
-	// configure
-	config := modbus.TCPHandlerOptions{
-		Address: "localhost:1502",
-	}
+var id int
+// configure
+config := modbus.TCPHandlerOptions{
+	Address: "localhost:1502",
+}
 
-	err = client.Call("Adapter.ConfigureTCP", config, &id)
-	if err != nil {
-		fmt.Println("Configure Error:", err)
-	} else {
-		fmt.Println("Configure Response:", id)
-	}
+err = client.Call("Adapter.ConfigureTCP", config, &id)
+if err != nil {
+	fmt.Println("Configure Error:", err)
+} else {
+	fmt.Println("Configure Response:", id)
+}
 ```
 
 ### Reading Values
@@ -105,21 +105,21 @@ To start reading values, you need to perform an RPC call to the read method.
 
 ```go
 configRead := modbus.RWOptions{
-		Address:   100,
-		Quantity:  1,
-		DataPoint: modbus.HoldingRegister,
-		ID:        id,
-	}
+	Address:   100,
+	Quantity:  1,
+	DataPoint: modbus.HoldingRegister,
+	ID:        id,
+}
 
-	data := make([]byte, 1)
+data := make([]byte, 1)
 
-	// Read
-	err = client.Call("Adapter.Read", configRead, &data)
-	if err != nil {
-		fmt.Println("Read Error:", err)
-	} else {
-		fmt.Println("Read Data:", hex.EncodeToString(data))
-	}
+// Read
+err = client.Call("Adapter.Read", configRead, &data)
+if err != nil {
+	fmt.Println("Read Error:", err)
+} else {
+	fmt.Println("Read Data:", hex.EncodeToString(data))
+}
 ```
 
 
@@ -139,20 +139,20 @@ To start writing values, you need to perform an RPC call to the write method.
 
 ```go
 configWrite := modbus.RWOptions{
-		Address:   100,
-		Quantity:  1,
-		Value:     modbus.ValueWrapper{Data: uint16(1)},
-		DataPoint: modbus.Register,
-		ID:        id,
-	}
+	Address:   100,
+	Quantity:  1,
+	Value:     modbus.ValueWrapper{Data: uint16(1)},
+	DataPoint: modbus.Register,
+	ID:        id,
+}
 
-	// Write
-	err = client.Call("Adapter.Write", configWrite, &data)
-	if err != nil {
-		fmt.Println("Write Error:", err)
-	} else {
-		fmt.Println("Write Response:", hex.EncodeToString(data))
-	}
+// Write
+err = client.Call("Adapter.Write", configWrite, &data)
+if err != nil {
+	fmt.Println("Write Error:", err)
+} else {
+	fmt.Println("Write Response:", hex.EncodeToString(data))
+}
 ```
 
 The value field can be either `uint16` or `[]byte`.

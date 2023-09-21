@@ -10,7 +10,7 @@ import (
 
 func TestRead(t *testing.T) {
 	modbusService, err := NewTCPClient(TCPHandlerOptions{
-		Address: Address,
+		Address: address,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create ModbusService: %v", err)
@@ -73,7 +73,7 @@ func TestRead(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	modbusService, err := NewTCPClient(TCPHandlerOptions{
-		Address: Address,
+		Address: address,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create ModbusService: %v", err)

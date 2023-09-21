@@ -22,8 +22,7 @@ func main() {
 		Address: "localhost:1502",
 	}
 
-	err = client.Call("Adapter.ConfigureTCP", config, &id)
-	if err != nil {
+	if err = client.Call("Adapter.ConfigureTCP", config, &id); err != nil {
 		fmt.Println("Configure Error:", err)
 	} else {
 		fmt.Println("Configure Response:", id)
@@ -39,8 +38,7 @@ func main() {
 	data := make([]byte, 1)
 
 	// Read
-	err = client.Call("Adapter.Read", configRead, &data)
-	if err != nil {
+	if err = client.Call("Adapter.Read", configRead, &data); err != nil {
 		fmt.Println("Read Error:", err)
 	} else {
 		fmt.Println("Read Data:", hex.EncodeToString(data))
@@ -55,8 +53,7 @@ func main() {
 	}
 
 	// Write
-	err = client.Call("Adapter.Write", configWrite, &data)
-	if err != nil {
+	if err = client.Call("Adapter.Write", configWrite, &data); err != nil {
 		fmt.Println("Write Error:", err)
 	} else {
 		fmt.Println("Write Response:", hex.EncodeToString(data))

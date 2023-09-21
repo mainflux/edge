@@ -75,7 +75,8 @@ func main() {
 		return server.Start(ctx)
 	})
 
-	fmt.Printf("modbus service listening on rpc %s:%d", cfg.RPCHost, cfg.RPCPort)
+	logger.Info(fmt.Sprintf("modbus service listening on rpc %s:%d", cfg.RPCHost, cfg.RPCPort))
+
 	defer func() {
 		if err := server.Stop(); err != nil {
 			logger.Error(err.Error())

@@ -17,8 +17,9 @@ type Service interface {
 	// Write subscribes to the Subscriber and
 	// writes to modbus sensor.
 	Write(config RWOptions, res *[]byte) error
-	// Configure sets the configuration for a device and returns the index for the connection.
+	// ConfigureTCP sets the configuration for a TCP device and returns the index for the connection.
 	ConfigureTCP(config TCPHandlerOptions, id *int) error
+	// ConfigureRTU sets the configuration for a RTU/Serial device and returns the index for the connection.
 	ConfigureRTU(config RTUHandlerOptions, id *int) error
 	// Close closes the modbus connection.
 	Close(id int, res *bool) error

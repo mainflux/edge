@@ -50,7 +50,7 @@ func main() {
 
 	handler := handler{logger: logger, format: format}
 
-	if err := ps.Subscribe(context.Background(), "edge", fmt.Sprintf("channels.%s", subj), &handler); err != nil {
+	if err := ps.Subscribe("edge", fmt.Sprintf("channels.%s", subj), &handler); err != nil {
 		logger.Error(err.Error())
 		return
 	}

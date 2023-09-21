@@ -2,14 +2,12 @@ module github.com/mainflux/edge
 
 go 1.21.0
 
-replace github.com/mainflux/mainflux => github.com/mainflux/mainflux v0.0.0-20230811131717-9dbe87f03a1a
-
 require (
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/go-kit/kit v0.12.0
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0
-	github.com/mainflux/mainflux v0.0.0-20230417142557-ffd67ae154c0
+	github.com/mainflux/mainflux v0.0.0-20230920101217-28f4965d2638
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/stretchr/testify v1.8.4
