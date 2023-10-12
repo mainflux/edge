@@ -15,18 +15,15 @@ import (
 	"github.com/mainflux/edge/modbus/api"
 	mflog "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/pkg/errors"
-	"github.com/mainflux/mainflux/pkg/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
 const svcName = "modbus"
 
 type config struct {
-	LogLevel   string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"    envDefault:"info"`
-	JaegerURL  string `env:"MF_JAEGER_URL"                  envDefault:"http://localhost:14268/api/traces"`
-	RPCPort    int    `env:"MF_MODBUS_ADAPTER_RPC_PORT"     envDefault:"8855"`
-	RPCHost    string `env:"MF_MODBUS_ADAPTER_RPC_HOST"     envDefault:"localhost"`
-	InstanceID string `env:"MF_MODBUS_ADAPTER_INSTANCE_ID"  envDefault:""`
+	LogLevel string `env:"MF_MODBUS_ADAPTER_LOG_LEVEL"    envDefault:"info"`
+	RPCPort  int    `env:"MF_MODBUS_ADAPTER_RPC_PORT"     envDefault:"8855"`
+	RPCHost  string `env:"MF_MODBUS_ADAPTER_RPC_HOST"     envDefault:"localhost"`
 }
 
 func main() {
@@ -41,12 +38,6 @@ func main() {
 	logger, err := mflog.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
 		log.Fatalf("failed to init logger: %s", err)
-	}
-
-	if cfg.InstanceID == "" {
-		if cfg.InstanceID, err = uuid.New().ID(); err != nil {
-			logger.Fatal(fmt.Sprintf("failed to generate instanceID: %s", err))
-		}
 	}
 
 	var exitCode int
