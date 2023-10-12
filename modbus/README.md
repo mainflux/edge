@@ -11,8 +11,6 @@ default values.
 | Variable                      | Description                | Default                        |
 | ----------------------------- | -------------------------- | ------------------------------ |
 | MF_MODBUS_ADAPTER_LOG_LEVEL   | Service log level          | info                           |
-| MF_JAEGER_URL                 | Jaeger server URL          | http://jaeger:14268/api/traces |
-| MF_MODBUS_ADAPTER_INSTANCE_ID | Modbus adapter instance ID |                                |
 | MF_MODBUS_ADAPTER_RPC_HOST    | Modbus service HTTP host   |                                |
 | MF_MODBUS_ADAPTER_RPC_PORT    | Modbus service HTTP port   | 8855                           |
 
@@ -40,8 +38,6 @@ make install
 MF_MODBUS_ADAPTER_LOG_LEVEL=[Service log level] \
 MF_MODBUS_ADAPTER_RPC_HOST=[Message broker instance URL] \
 MF_MODBUS_ADAPTER_RPC_PORT=[Message broker instance URL] \
-MF_JAEGER_URL=[Jaeger server URL] \
-MF_MODBUS_ADAPTER_INSTANCE_ID=[CoAP adapter instance ID] \
 $GOBIN/mainflux-modbus
 ```
 
