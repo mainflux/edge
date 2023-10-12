@@ -1,0 +1,31 @@
+# Copyright (c) Mainflux
+# SPDX-License-Identifier: Apache-2.0
+
+# This docker-compose file contains modbus service. Since it's optional, this file is
+# dependent of docker-compose file from <project_root>/docker. In order to run this services, execute command:
+# docker-compose -f docker/docker-compose.yml -f docker/modbus/docker-compose.yml up
+# from project root.
+
+version: "3.7"
+
+networks:
+  docker_mainflux-edge-base-net:
+    external: true
+
+services:
+  modbus:
+    image: mainflux/modbus:${MF_RELEASE_TAG}
+    container_name: mainflux-modbus
+    depends_on:
+      - broker
+    restart: on-failure
+    environment:
+      MF_MODBUS_ADAPTER_LOG_LEVEL: ${MF_MODBUS_ADAPTER_LOG_LEVEL}
+      MF_MODBUS_ADAPTER_RPC_HOST: ${MF_MODBUS_ADAPTER_RPC_HOST}
+      MF_HTTP_ADAPTER_RPC_PORT: ${MF_HTTP_ADAPTER_RPC_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_MODBUS_ADAPTER_INSTANCE_ID: ${MF_MODBUS_ADAPTER_INSTANCE_ID}
+    ports:
+      - ${MF_HTTP_ADAPTER_RPC_PORT}:${MF_HTTP_ADAPTER_RPC_PORT}
+    networks:
+      - docker_mainflux-edge-base-net
