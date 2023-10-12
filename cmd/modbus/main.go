@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"github.com/caarlos0/env/v7"
-	jaegerClient "github.com/mainflux/edge/internal/clients/jaeger"
 	"github.com/mainflux/edge/modbus"
 	"github.com/mainflux/edge/modbus/api"
 	mflog "github.com/mainflux/mainflux/logger"
@@ -50,18 +49,8 @@ func main() {
 		}
 	}
 
-	tp, err := jaegerClient.NewProvider(svcName, cfg.JaegerURL, cfg.InstanceID)
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Failed to init Jaeger: %s", err))
-	}
 	var exitCode int
 	defer mflog.ExitWithError(&exitCode)
-
-	defer func() {
-		if err := tp.Shutdown(ctx); err != nil {
-			logger.Error(fmt.Sprintf("Error shutting down tracer provider: %v", err))
-		}
-	}()
 
 	svc := modbus.New()
 
