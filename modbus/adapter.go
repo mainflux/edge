@@ -5,10 +5,7 @@ import (
 	"sync"
 )
 
-var (
-	errUnsupportedModbusProtocol = errors.New("unsupported modbus protocol")
-	errDeviceNotConfigured       = errors.New("modbus device is not configured")
-)
+var errDeviceNotConfigured = errors.New("modbus device is not configured")
 
 type Service interface {
 	// Read subscribes to the Subscriber and
